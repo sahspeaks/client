@@ -1,49 +1,41 @@
-import React, { useEffect, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { RiDeleteBin7Fill } from "react-icons/ri";
 import { Link, useNavigate } from "react-router-dom";
-import UserContext from "../context/UserContext";
 import { RiAddCircleFill } from "react-icons/ri";
+import empService from "../services/EmpService";
 
-export default function Employees({ isAuthenticated }) {
+export default function Employees() {
   //   console.log(isAuthenticated);
-  const { user, setUser } = useContext(UserContext);
-  const deleteUserHandler = (userId) => {};
+  const deleteUserHandler = (userId) => {
+    empService.deleteEmployee(userId).then((response) => {
+      // console.log(response);
+      if (response.data.success) {
+        console.log("Deleted");
+      } else {
+        console.log("Invalid Details");
+      }
+    });
+  };
   const editHandler = (userId) => {};
 
-  const users = [
-    {
-      id: 1,
-      image: "image",
-      name: "name",
-      email: "email",
-      phone: "phone",
-      designation: "designation",
-      course: "course",
-      gender: "M",
-      createdAt: "12-03-2024",
-    },
-    {
-      id: 2,
-      image: "image",
-      name: "name",
-      email: "email",
-      phone: "phone",
-      designation: "designation",
-      course: "course",
-    },
-  ];
-  const navigate = useNavigate();
+  const [employees, setEmployees] = useState([]);
+  const [error, setError] = useState("");
+
   useEffect(() => {
-    // const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      // Set the user from local storage
-      setUser(JSON.parse(storedUser));
-      alert("User Logged in");
-    } else {
-      navigate("/login");
+    try {
+      const response = empService.getEmployees().then((response) => {
+        // console.log(response.data.employee);
+        if (response.data.succes) {
+          setEmployees(response.data.employee);
+        } else {
+          console.log("Invalid Details");
+        }
+      });
+    } catch (error) {
+      setError(error);
+      console.error("Error:", error);
     }
-  }, [setUser, navigate]);
+  }, [deleteUserHandler]);
 
   return (
     <div className="font-body text-[#363A45] h-[100vh] grid grid-cols-1 md:grid-cols-2 mx-auto">
@@ -75,8 +67,8 @@ export default function Employees({ isAuthenticated }) {
             </thead>
 
             <tbody>
-              {users &&
-                users.map((item) => (
+              {employees &&
+                employees.map((item) => (
                   <Row
                     changeRoleHandler={editHandler}
                     deleteUserHandler={deleteUserHandler}
@@ -95,8 +87,14 @@ export default function Employees({ isAuthenticated }) {
 function Row({ item, editHandler, deleteUserHandler }) {
   return (
     <tr className="p-3">
-      <td className="pb-4">{item.id}</td>
-      <td className="pb-4">{item.image}</td>
+      <td className="pb-4">{item._id}</td>
+      <td className="pb-4">
+        <img
+          src={item.avatar.url}
+          className=" ml-4 h-10 w-10 rounded-lg "
+          alt=""
+        />
+      </td>
       <td className="pb-4">{item.name}</td>
       <td className="pb-4">{item.email}</td>
       <td className="pb-4">{item.phone}</td>
@@ -107,16 +105,15 @@ function Row({ item, editHandler, deleteUserHandler }) {
       <td className="pb-4">{item.role}</td>
       <td className="pb-4">
         <div className="flex items-start gap-4">
-          <button
-            onClick={() => editHandler(item._id)}
-            className="w-[90px] bg-purple-600 hover:bg-purple-800 transition-all ease-in-out duration-200 text-white py-2 rounded-lg text-sm font-normal"
-          >
-            Edit
-          </button>
+          <Link to={`/editemployee/${item._id}`}>
+            <button className="w-[90px] bg-purple-600 hover:bg-purple-800 transition-all ease-in-out duration-200 text-white py-2 rounded-lg text-sm font-normal">
+              Edit
+            </button>
+          </Link>
 
           <button
-            className="w-[80px] text-purple-500 hover:text-purple-800 transition-all ease-in-out duration-200"
             onClick={() => deleteUserHandler(item._id)}
+            className="w-[80px] text-purple-500 hover:text-purple-800 transition-all ease-in-out duration-200"
           >
             <RiDeleteBin7Fill
               className="bg-[#d7c5ff] hover:bg-gray-200 transition-all ease-in-out duration-200 p-2 rounded-md"

@@ -1,22 +1,22 @@
-import React, { useState, useContext } from "react";
-import { Link } from "react-router-dom";
-import axios from "axios";
-import UserContext from "../context/UserContext";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import authService from "../services/authService";
+import { useDispatch } from "react-redux";
+import { login } from "../store/authSlice";
 
 const Register = () => {
-  const { user, setUser } = useContext(UserContext);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [image, setImage] = useState(null);
-  const navigate = useNavigate();
 
-  const server = "http://localhost:5000/api/v1";
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const submitHandler = async (e) => {
     e.preventDefault();
-
+    setError("");
     const formData = new FormData();
     formData.append("avatar", image);
     formData.append("name", name);
@@ -24,26 +24,20 @@ const Register = () => {
     formData.append("password", password);
 
     try {
-      const response = await axios.post(`${server}/register`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true,
-      });
-      //   console.log(response.data);
-      //   setUser(response.data.user);
-      if (response.data.success) {
-        navigate("/login");
-        alert("Acount Created Successfully");
-      } else {
-        alert("Invalid Details");
+      const response = await authService.signup(formData);
+      if (response) {
+        const userData = await authService.getMyProfile();
+        if (userData) {
+          dispatch(login(userData.data));
+          navigate("/");
+        }
       }
-      // Reset form fields after successful registration
       setEmail("");
       setName("");
       setPassword("");
       setImage(null);
     } catch (error) {
+      setError(error);
       console.error("Error:", error);
     }
   };
@@ -96,6 +90,7 @@ const Register = () => {
               Register
             </button>
           </div>
+          {error && <p className="text-red-600 mt-8 text-center">{error}</p>}
           <p>
             Already Signed Up ?{" "}
             <Link to="/login">

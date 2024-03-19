@@ -1,11 +1,11 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
-import UserContext from "../context/UserContext";
 import { useNavigate } from "react-router-dom";
+import authService from "../services/authService";
+import { useDispatch } from "react-redux";
+import { login as authLogin } from "../store/authSlice";
 
 const Login = () => {
-  const server = "http://localhost:5000/api/v1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -14,54 +14,24 @@ const Login = () => {
   const [createdAt, setCreatedAt] = useState("");
   let [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [error, setError] = useState("");
 
   const submitHandler = async (e) => {
     e.preventDefault();
+    setError("");
+
     try {
-      const response = await axios.post(
-        `${server}/login`,
-        { email, password },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
-      console.log(response);
-
-      console.log(response.status);
-      // Handle cookies manually
-      const cookies = document.cookie;
-      console.log(cookies);
-      const resultData = response.data.user;
-      const { name, avatar, role, createdAt } = resultData;
-      setName(name);
-      setAvatar(avatar);
-      setRole(role);
-      setCreatedAt(createdAt);
-
-      if (response.data.success) {
-        // Update local storage directly
-        localStorage.setItem("user", JSON.stringify(resultData));
-        localStorage.setItem("isAuthenticated", true);
-
-        // Update user context
-        setUser({ email, name, avatar, role, createdAt });
-
+      const response = await authService.login({ email, password });
+      if (response) {
+        const userData = await authService.getMyProfile();
+        console.log(userData.data.user);
+        if (userData) dispatch(authLogin(userData.data));
         navigate("/");
-        // Success message
-        alert("Login Success");
-      } else {
-        // failure message
-        alert("Login Failed");
       }
-
-      setEmail("");
-      setPassword("");
     } catch (error) {
+      setError(error);
       console.error("Error:", error);
     }
   };
@@ -108,6 +78,7 @@ const Login = () => {
             >
               Login
             </button>
+            {error && <p className="text-red-600 mt-8 text-center">{error}</p>}
             <p>
               New User ?{" "}
               <Link to="/signup">
